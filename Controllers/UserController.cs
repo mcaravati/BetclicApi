@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BetclicApi.Models;
+using BetclicApi.Services;
 
 namespace BetclicApi.Controllers
 {
@@ -9,17 +10,26 @@ namespace BetclicApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly BetclicContext _context;
+        private readonly RankingService _rankingService;
 
         public UserController(BetclicContext context)
         {
             _context = context;
+            _rankingService = new RankingService(_context);
         }
 
         // GET: api/User
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUser()
-        {
-            return await _context.User.OrderByDescending(u => u.Points).ToListAsync();
+        {   
+            var userDescending =  await _context.User.OrderByDescending(u => u.Points).ToListAsync();
+            
+            for (var i = 0; i < userDescending.Count; i++)
+            {
+                userDescending[i].Rank = (uint)(i + 1);
+            }
+
+            return userDescending;
         }
 
         // GET: api/User/5
@@ -39,31 +49,21 @@ namespace BetclicApi.Controllers
         // PUT: api/User/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(long id, User user)
+        public async Task<IActionResult> PutUser(long id, UserUpdate update)
         {
-            if (id != user.Id)
+            if (id != update.Id || !UserExists(id))
             {
                 return BadRequest();
             }
 
+            var user = await _context.User.FindAsync(id);
+            user.Points = update.Points;
+            
             _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
+            
+            await _context.SaveChangesAsync();
+            await _rankingService.UpdateRanks();
+ 
             return NoContent();
         }
 
@@ -72,15 +72,25 @@ namespace BetclicApi.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(string nickname)
         {
-            // TODO: Check if nickname is taken
+            // Could use a profanity filter
             if (string.IsNullOrEmpty(nickname) || nickname.Length > 20 || nickname.Length < 3)
             {
                 return BadRequest("Nickname must be between 3 and 20 characters");
             }
             
+            // Check if nickname is taken
+            if (_context.User.Any(u => u.NickName == nickname))
+            {
+                return BadRequest("Nickname is already taken");
+            }
+            
             var user = new User { NickName = nickname }; 
             _context.User.Add(user);
             await _context.SaveChangesAsync();
+
+            // Update all ranks
+            await _rankingService.UpdateRanks();
+            user = await _context.User.FindAsync(user.Id);
 
             return CreatedAtAction("GetUser", new { id = user.Id }, user);
         }
@@ -97,6 +107,8 @@ namespace BetclicApi.Controllers
 
             _context.User.Remove(user);
             await _context.SaveChangesAsync();
+            
+            await _rankingService.UpdateRanks();
 
             return NoContent();
         }
