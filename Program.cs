@@ -1,11 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using BetclicApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<BetclicContext>(opt =>
-    opt.UseInMemoryDatabase("BetlicDb"));
+builder.Services.AddDbContext<BetclicContext>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

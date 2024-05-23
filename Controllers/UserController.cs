@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BetclicApi.Models;
@@ -22,21 +23,35 @@ namespace BetclicApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUser()
         {   
-            var userDescending =  await _context.User.OrderByDescending(u => u.Points).ToListAsync();
-            
-            for (var i = 0; i < userDescending.Count; i++)
-            {
-                userDescending[i].Rank = (uint)(i + 1);
-            }
+            var rankedUsers = _context.User
+                .AsEnumerable()
+                .OrderByDescending(u => u.Points)
+                .Select((u, index) => new User {
+                    Id = u.Id, 
+                    NickName = u.NickName,
+                    Points = u.Points,
+                    Rank = (uint) index + 1,
+                })
+                .ToList();
 
-            return userDescending;
+            return rankedUsers;
         }
 
         // GET: api/User/5
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(long id)
         {
-            var user = await _context.User.FindAsync(id);
+            // Need to compute all ranks
+            var user = _context.User
+                .AsEnumerable()
+                .OrderByDescending(u => u.Points)
+                .Select((u, index) => new User
+                {
+                    Id = u.Id,
+                    NickName = u.NickName,
+                    Points = u.Points,
+                    Rank = (uint)index + 1,
+                }).FirstOrDefault(u => u.Id == id);
 
             if (user == null)
             {
@@ -47,13 +62,12 @@ namespace BetclicApi.Controllers
         }
 
         // PUT: api/User/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(long id, UserUpdate update)
         {
-            if (id != update.Id || !UserExists(id))
+            if (!UserExists(id))
             {
-                return BadRequest();
+                return NotFound();
             }
 
             var user = await _context.User.FindAsync(id);
@@ -62,54 +76,70 @@ namespace BetclicApi.Controllers
             _context.Entry(user).State = EntityState.Modified;
             
             await _context.SaveChangesAsync();
-            await _rankingService.UpdateRanks();
  
             return NoContent();
         }
 
         // POST: api/User
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(string nickname)
+        public async Task<ActionResult<User>> PostUser(UserCreation creation)
         {
+            var user = new User { NickName = creation.NickName }; 
+
             // Could use a profanity filter
-            if (string.IsNullOrEmpty(nickname) || nickname.Length > 20 || nickname.Length < 3)
+            if (!ModelState.IsValid)
             {
-                return BadRequest("Nickname must be between 3 and 20 characters");
+                return BadRequest(ModelState);
             }
             
             // Check if nickname is taken
-            if (_context.User.Any(u => u.NickName == nickname))
+            try
             {
-                return BadRequest("Nickname is already taken");
+                _context.User.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Update all ranks
+                await _rankingService.UpdateRanks();
+
+                // TODO: Explain in the README why I do that
+                // Need to compute all ranks
+                user = _context.User
+                    .AsEnumerable()
+                    .OrderByDescending(u => u.Points)
+                    .Select((u, index) => new User
+                    {
+                        Id = u.Id,
+                        NickName = u.NickName,
+                        Points = u.Points,
+                        Rank = (uint)index + 1,
+                    }).FirstOrDefault(u => u.Id == user.Id);
+
+                return CreatedAtAction("GetUser", new { id = user.Id }, user);
             }
-            
-            var user = new User { NickName = nickname }; 
-            _context.User.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Update all ranks
-            await _rankingService.UpdateRanks();
-            user = await _context.User.FindAsync(user.Id);
-
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            catch (DbUpdateException ex)
+            {
+                var errorResponse = new
+                {
+                    type = "Database Exception",
+                    title = "Nickname unicity exception",
+                    status = 400,
+                    errors = new Dictionary<string, string[]>
+                    {
+                        { "NickName", ["This nickname is already in use, please try another one."] }
+                    },
+                    traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+                };
+                return BadRequest(errorResponse);
+            }
         }
 
-        // DELETE: api/User/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(long id)
+        // DELETE: api/User
+        [HttpDelete]
+        public async Task<IActionResult> DeleteUser()
         {
-            var user = await _context.User.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.User.Remove(user);
+            _context.User.RemoveRange(await _context.User.ToListAsync());
             await _context.SaveChangesAsync();
             
-            await _rankingService.UpdateRanks();
-
             return NoContent();
         }
 
