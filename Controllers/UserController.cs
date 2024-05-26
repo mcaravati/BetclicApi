@@ -2,24 +2,34 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BetclicApi.Models;
-using BetclicApi.Services;
 
 namespace BetclicApi.Controllers
 {
+    /// <summary>
+    /// Controller for managing User entities via API endpoints.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
         private readonly BetclicContext _context;
-        private readonly RankingService _rankingService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserController"/> class with the specified
+        /// context.
+        /// </summary>
+        /// <param name="context">The database context to be used.</param>
         public UserController(BetclicContext context)
         {
             _context = context;
-            _rankingService = new RankingService(_context);
         }
 
         // GET: api/User
+        /// <summary>
+        /// Retrieves all users, ordered by points in descending order, and assigns ranks based on
+        /// their points.
+        /// </summary>
+        /// <returns>A list of users with their respective ranks.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUser()
         {   
@@ -37,7 +47,14 @@ namespace BetclicApi.Controllers
             return rankedUsers;
         }
 
-        // GET: api/User/5
+        // GET: api/User/{id}
+        /// <summary>
+        /// Retrieves a specific user by their ID, along with their computed rank.
+        /// </summary>
+        /// <param name="id">The ID of the user to be retrieved.</param>
+        /// <returns>
+        /// The user with the specified ID, or a NotFound result if the user does not exist.
+        /// </returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(long id)
         {
@@ -61,7 +78,16 @@ namespace BetclicApi.Controllers
             return user;
         }
 
-        // PUT: api/User/5
+        // PUT: api/User/{id}
+        /// <summary>
+        /// Updates the points of an existing user.
+        /// </summary>
+        /// <param name="id">The ID of the user to be updated.</param>
+        /// <param name="update">An object containing the new points for the user.</param>
+        /// <returns>
+        /// A NoContent result if the update is successful, or a NotFound result if the user does
+        /// not exist.
+        /// </returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(long id, UserUpdate update)
         {
@@ -81,6 +107,12 @@ namespace BetclicApi.Controllers
         }
 
         // POST: api/User
+        /// <summary>
+        /// Creates a new user with the specified nickname.
+        /// </summary>
+        /// <param name="creation">An object containing the nickname for the new user.</param>
+        /// <returns>The created user, or a BadRequest result if the nickname is already in use
+        /// or other validation errors occur.</returns>
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(UserCreation creation)
         {
@@ -97,9 +129,6 @@ namespace BetclicApi.Controllers
             {
                 _context.User.Add(user);
                 await _context.SaveChangesAsync();
-
-                // Update all ranks
-                await _rankingService.UpdateRanks();
 
                 // TODO: Explain in the README why I do that
                 // Need to compute all ranks
@@ -134,6 +163,10 @@ namespace BetclicApi.Controllers
         }
 
         // DELETE: api/User
+        /// <summary>
+        /// Deletes all users from the database.
+        /// </summary>
+        /// <returns>A NoContent result indicating the deletion was successful.</returns>
         [HttpDelete]
         public async Task<IActionResult> DeleteUser()
         {
@@ -143,6 +176,11 @@ namespace BetclicApi.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Checks if a user with the specified ID exists.
+        /// </summary>
+        /// <param name="id">The ID of the user to check for existence.</param>
+        /// <returns>True if the user exists, otherwise false.</returns>
         private bool UserExists(long id)
         {
             return _context.User.Any(e => e.Id == id);
