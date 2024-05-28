@@ -16,7 +16,7 @@ namespace BetclicApi.Migrations
                 {
                     Id = table.Column<long>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    NickName = table.Column<string>(type: "TEXT", nullable: false),
+                    Username = table.Column<string>(type: "TEXT", nullable: false),
                     Points = table.Column<int>(type: "INTEGER", nullable: false),
                     Rank = table.Column<uint>(type: "INTEGER", nullable: false)
                 },
@@ -26,9 +26,9 @@ namespace BetclicApi.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_User_NickName",
+                name: "IX_User_Username",
                 table: "User",
-                column: "NickName",
+                column: "Username",
                 unique: true);
         }
 

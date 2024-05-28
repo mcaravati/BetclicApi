@@ -46,6 +46,7 @@ Avant de mettre l'application en production, veuillez effectuer les étapes suiv
 
 1. **Passer à l'environnement de production :** Modifier `ASPNETCORE_ENVIRONMENT` à `Production` dans `Properties/launchSettings.json`.
 2. **Configurer les hôtes autorisés :** Spécifier les hôtes autorisés à accéder à l'API dans `appsettings.json`.
+3. **Configurer les certificats pour HTTPS**
 
 ## Pistes d'amélioration
 - Ajouter un **filtre à injures** pour éviter que les utilisateurs en utilisent dans leurs noms d'utilisateurs.

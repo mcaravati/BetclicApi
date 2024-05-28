@@ -38,7 +38,7 @@ namespace BetclicApi.Controllers
                 .OrderByDescending(u => u.Points)
                 .Select((u, index) => new User {
                     Id = u.Id, 
-                    NickName = u.NickName,
+                    Username = u.Username,
                     Points = u.Points,
                     Rank = (uint) index + 1,
                 })
@@ -65,7 +65,7 @@ namespace BetclicApi.Controllers
                 .Select((u, index) => new User
                 {
                     Id = u.Id,
-                    NickName = u.NickName,
+                    Username = u.Username,
                     Points = u.Points,
                     Rank = (uint)index + 1,
                 }).FirstOrDefault(u => u.Id == id);
@@ -108,15 +108,15 @@ namespace BetclicApi.Controllers
 
         // POST: api/User
         /// <summary>
-        /// Creates a new user with the specified nickname.
+        /// Creates a new user with the specified username.
         /// </summary>
-        /// <param name="creation">An object containing the nickname for the new user.</param>
-        /// <returns>The created user, or a BadRequest result if the nickname is already in use
+        /// <param name="creation">An object containing the username for the new user.</param>
+        /// <returns>The created user, or a BadRequest result if the username is already in use
         /// or other validation errors occur.</returns>
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(UserCreation creation)
         {
-            var user = new User { NickName = creation.NickName }; 
+            var user = new User { Username = creation.Username }; 
 
             // Could use a profanity filter
             if (!ModelState.IsValid)
@@ -124,7 +124,7 @@ namespace BetclicApi.Controllers
                 return BadRequest(ModelState);
             }
             
-            // Check if nickname is taken
+            // Check if username is taken
             try
             {
                 _context.User.Add(user);
@@ -138,7 +138,7 @@ namespace BetclicApi.Controllers
                     .Select((u, index) => new User
                     {
                         Id = u.Id,
-                        NickName = u.NickName,
+                        Username = u.Username,
                         Points = u.Points,
                         Rank = (uint)index + 1,
                     }).FirstOrDefault(u => u.Id == user.Id);
@@ -150,11 +150,11 @@ namespace BetclicApi.Controllers
                 var errorResponse = new
                 {
                     type = "Database Exception",
-                    title = "Nickname unicity exception",
+                    title = "Username unicity exception",
                     status = 400,
                     errors = new Dictionary<string, string[]>
                     {
-                        { "NickName", ["This nickname is already in use, please try another one."] }
+                        { "Username", ["This Username is already in use, please try another one."] }
                     },
                     traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
                 };

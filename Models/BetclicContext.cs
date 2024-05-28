@@ -30,13 +30,13 @@ public class BetclicContext : DbContext
     }
 
     /// <summary>
-    /// Configures the model and its relationships. In this context, it ensures that the NickName
+    /// Configures the model and its relationships. In this context, it ensures that the Username
     /// property of the User entity is unique.
     /// </summary>
     /// <param name="modelBuilder">The ModelBuilder used to configure the model.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>().HasIndex(u => u.NickName).IsUnique();
+        modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
 
         base.OnModelCreating(modelBuilder);
     }

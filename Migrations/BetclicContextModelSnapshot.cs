@@ -22,7 +22,7 @@ namespace BetclicApi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("NickName")
+                    b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -34,7 +34,7 @@ namespace BetclicApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NickName")
+                    b.HasIndex("Username")
                         .IsUnique();
 
                     b.ToTable("User");
