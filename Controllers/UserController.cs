@@ -24,13 +24,13 @@ namespace BetclicApi.Controllers
             _context = context;
         }
 
-        // GET: api/User
         /// <summary>
         /// Retrieves all users, ordered by points in descending order, and assigns ranks based on
         /// their points.
         /// </summary>
         /// <returns>A list of users with their respective ranks.</returns>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<User>>> GetUser()
         {   
             var rankedUsers = _context.User
@@ -47,7 +47,6 @@ namespace BetclicApi.Controllers
             return rankedUsers;
         }
 
-        // GET: api/User/{id}
         /// <summary>
         /// Retrieves a specific user by their ID, along with their computed rank.
         /// </summary>
@@ -55,7 +54,11 @@ namespace BetclicApi.Controllers
         /// <returns>
         /// The user with the specified ID, or a NotFound result if the user does not exist.
         /// </returns>
+        /// <response code="200">Returns the user with the specified ID.</response>
+        /// <response code="404">If the user with the specified ID is not found.</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<User>> GetUser(long id)
         {
             // Need to compute all ranks
@@ -78,7 +81,6 @@ namespace BetclicApi.Controllers
             return user;
         }
 
-        // PUT: api/User/{id}
         /// <summary>
         /// Updates the points of an existing user.
         /// </summary>
@@ -88,7 +90,11 @@ namespace BetclicApi.Controllers
         /// A NoContent result if the update is successful, or a NotFound result if the user does
         /// not exist.
         /// </returns>
+        /// <response code="204">NoContent: The update is successful.</response>
+        /// <response code="404">NotFound: The user does not exist.</response>
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> PutUser(long id, UserUpdate update)
         {
             if (!UserExists(id))
@@ -106,14 +112,17 @@ namespace BetclicApi.Controllers
             return NoContent();
         }
 
-        // POST: api/User
         /// <summary>
         /// Creates a new user with the specified username.
         /// </summary>
         /// <param name="creation">An object containing the username for the new user.</param>
         /// <returns>The created user, or a BadRequest result if the username is already in use
         /// or other validation errors occur.</returns>
+        /// <response code="201">The created user.</response>
+        /// <response code="400">Bad request result if the username is already in use or other validation errors occur.</response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<User>> PostUser(UserCreation creation)
         {
             var user = new User { Username = creation.Username }; 
@@ -130,7 +139,6 @@ namespace BetclicApi.Controllers
                 _context.User.Add(user);
                 await _context.SaveChangesAsync();
 
-                // TODO: Explain in the README why I do that
                 // Need to compute all ranks
                 user = _context.User
                     .AsEnumerable()
@@ -162,12 +170,13 @@ namespace BetclicApi.Controllers
             }
         }
 
-        // DELETE: api/User
         /// <summary>
         /// Deletes all users from the database.
         /// </summary>
         /// <returns>A NoContent result indicating the deletion was successful.</returns>
+        /// <response code="204">NoContent. The deletion was successful.</response>
         [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeleteUser()
         {
             _context.User.RemoveRange(await _context.User.ToListAsync());
